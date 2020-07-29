@@ -18,6 +18,7 @@ const { Menu, dialog } = remote;
 
 let mediaRecorder: MediaRecorder;
 let recordedChunks: any = [];
+let microAudioStream: any;
 
 startBtn.onclick = e => {
   mediaRecorder.start();
@@ -32,21 +33,32 @@ stopBtn.onclick = e => {
   startBtn.innerText = "Start";
 };
 
+// const getMicroAudio = (stream: any) => {
+//   console.log("Received audio stream.");
+//   microAudioStream = stream;
+//   stream.onended = () => { console.log("Micro audio ended."); };
+// };
+
+// const getUserMediaError = () => {
+//   console.log('getUserMedia() failed.')
+// }
+
 const handleDataAvailable: any = (e: any) => {
   console.log("video data available");
   recordedChunks.push(e.data);
 };
 
 const handleStop: any = async (e: any) => {
+  // videoElement.muted = false;
   console.log("stop")
   const blob: Blob = new Blob(recordedChunks, {
-    type: "video/webm; codecs=vp9"
+    type: "video/mp4"
   });
 
   const buffer: Buffer = Buffer.from(await blob.arrayBuffer());
   const { filePath } = await dialog.showSaveDialog({
     buttonLabel: "Save video",
-    defaultPath: `vid-${Date.now()}.webm`
+    defaultPath: `vid-${Date.now()}.mp4`
   });
 
   if (filePath) {
@@ -56,9 +68,16 @@ const handleStop: any = async (e: any) => {
 
 const selectSource: any = async (source: any) => {
   videoSelectBtn.innerText = source.name;
+  videoElement.muted = true;
 
   const constraints: any = {
-    audio: false,
+    // audio: false,
+    audio: {
+      mandatory: {
+        chromeMediaSource: "desktop",
+        chromeMediaSourceId: source.id
+      }
+    },
     video: {
       mandatory: {
         chromeMediaSource: "desktop",
@@ -66,6 +85,7 @@ const selectSource: any = async (source: any) => {
       }
     }
   };
+  // navigator.getUserMedia({ audio: true, video: false }, getMicroAudio, getUserMediaError);
   const stream: MediaStream = await navigator.mediaDevices.getUserMedia(constraints);
   videoElement.srcObject = stream;
   videoElement.play();
